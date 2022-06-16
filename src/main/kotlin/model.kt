@@ -39,7 +39,7 @@ val CONFIG by lazy {
 
 @Serializable
 data class Config(
-    val repositoryUrl: String = "https://xxx",
+    val repositoryUrl: String = "https://raw.githubusercontent.com/wadoon/key-smtmgr/main/repo.json",
     val installationPath: String = "\$XDG_DATA_PATH/key-smtmgr",
     val repositoryCache: String = "repository.cache.json"
 ) {
@@ -51,7 +51,7 @@ data class Config(
 @Serializable
 data class RemoteRepository(
     val updated: String,
-    val requiredVersion: Int,
+    val version: Int,
     val solvers: MutableList<RemoteSolver> = arrayListOf()
 ) {
     fun findLatestVersion(): Map<String, String> {
