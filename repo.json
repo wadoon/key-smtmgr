@@ -11,7 +11,7 @@
         {
           "version": "4.8.17",
           "releaseDate": "2022-05-05",
-          "executable": "z3",
+          "executable": " z3-4.8.17-x64-glibc-2.31/bin/z3",
           "download": {
             "linux": "https://github.com/Z3Prover/z3/releases/download/z3-4.8.17/z3-4.8.17-x64-glibc-2.31.zip",
             "mac": "https://github.com/Z3Prover/z3/releases/download/z3-4.8.17/z3-4.8.17-x64-osx-10.16.zip",

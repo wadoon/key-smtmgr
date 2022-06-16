@@ -1,10 +1,15 @@
 import com.vdurmont.semver4j.Semver
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.createDirectories
+import kotlin.io.path.exists
 import kotlin.io.path.readText
+import kotlin.io.path.writeText
 
 /**
  * Current version of the program, needed for repository layout.
@@ -22,18 +27,32 @@ const val NAME = "key-smtmgr"
 val CONFIG_HOME by lazy {
     val xdgconfig = System.getenv("XDG_CONFIG_HOME")
     val home = System.getenv("HOME")
-    if (xdgconfig != null) {
+    val path: Path = if (xdgconfig != null) {
         Paths.get(xdgconfig, NAME)
     } else {
-        Paths.get(home, NAME)
+        Paths.get(home, ".${NAME}")
     }
+    path.createDirectories()
+    path
 }
 
 val CONFIG_PATH by lazy { CONFIG_HOME.resolve("config.json") }
 
+val jsonWrite = Json {
+    encodeDefaults = true
+    prettyPrint = true
+}
+
 val CONFIG by lazy {
-    val text = CONFIG_PATH.readText()
-    Json.decodeFromString<Config>(text)
+    if (CONFIG_PATH.exists()) {
+        val text = CONFIG_PATH.readText()
+        Json.decodeFromString<Config>(text)
+    } else {
+        println("Create new configuration file at $CONFIG_PATH")
+        val config = Config()
+        CONFIG_PATH.writeText(jsonWrite.encodeToString(config))
+        config
+    }
 }
 
 
@@ -106,10 +125,14 @@ data class LocalRepository(
     val installed: MutableList<LocalSolver> = arrayListOf()
 ) {
     fun findLatestVersion(): Map<String, String> {
-        return installed.map {
+        return installed.associate {
             val highest = it.versions.map { it.version }.maxBy { Semver(it) }
             it.name to highest
-        }.toMap()
+        }
+    }
+
+    fun isInstalled(name: String, version: String): Boolean {
+        return installed.find { it.name == name }?.versions?.find { it.version == version } != null
     }
 }
 
