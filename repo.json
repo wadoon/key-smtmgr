@@ -19,6 +19,60 @@
           }
         }
       ]
+    },
+    {
+      "name": "MathSAT",
+      "license": "MathSAT5 is copyrighted 2009-2020 by Fondazione Bruno Kessler, Trento, Italy, University of Trento, Italy, and others. All rights reserved.\n\nMathSAT5 is available for research and evaluation purposes only. It can not be used in a commercial environment, particularly as part of a commercial product, without written permission. MathSAT5 is provided as is, without any warranty.\n\n",
+      "homepage": "https://mathsat.fbk.eu/",
+      "description": "",
+      "versions": [
+        {
+          "version": "5.6.7",
+          "releaseDate": "2022-04-11",
+          "executable": "",
+          "download": {
+            "linux": "https://mathsat.fbk.eu/download.php?file=mathsat-5.6.7-linux-x86_64.tar.gz",
+            "mac": "https://mathsat.fbk.eu/download.php?file=mathsat-5.6.7-osx.tar.gz",
+            "win": "https://mathsat.fbk.eu/download.php?file=mathsat-5.6.7-win64-msvc.zip"
+          }
+        }
+      ]
+    },
+    {
+      "name": "CVC4",
+      "license": "",
+      "homepage": "https://cvc4.github.io/",
+      "description": "CVC4 is an efficient open-source automatic theorem prover for satisfiability modulo theories (SMT) problems. It can be used to prove the validity (or, dually, the satisfiability) of first-order formulas in a large number of built-in logical theories and their combination.\n\n",
+      "versions": [
+        {
+          "version": "1.8",
+          "releaseDate": "2022-04-11",
+          "executable": "",
+          "download": {
+            "linux": "https://github.com/CVC4/CVC4/releases/download/1.8/cvc4-1.8-x86_64-linux-opt",
+            "mac": "",
+            "win": "https://github.com/CVC4/CVC4/releases/download/1.8/cvc4-1.8-win64-opt.exe"
+          }
+        }
+      ]
+    },
+    {
+      "name": "CVC5",
+      "license": "",
+      "homepage": "https://cvc5.github.io/",
+      "description": "",
+      "versions": [
+        {
+          "version": "latest",
+          "releaseDate": "unknown",
+          "executable": "",
+          "download": {
+            "linux": "https://github.com/cvc5/cvc5/releases/latest/download/cvc5-Linux",
+            "mac": "https://github.com/cvc5/cvc5/releases/latest/download/cvc5-macOS",
+            "win": "https://cvc5.stanford.edu/downloads/builds/x86_64-win64-production/cvc5-2022-06-16-x86_64-win64-production.exe"
+          }
+        }
+      ]
     }
   ]
 }
