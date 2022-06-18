@@ -2,7 +2,7 @@
   <configuration default="false" name="MainKt list" type="JetRunConfigurationType">
     <option name="MAIN_CLASS_NAME" value="MainKt" />
     <module name="key-smtmgr.main" />
-    <option name="PROGRAM_PARAMETERS" value="--verbose list" />
+    <option name="PROGRAM_PARAMETERS" value="list" />
     <shortenClasspath name="NONE" />
     <method v="2">
       <option name="Make" enabled="true" />

@@ -21,6 +21,9 @@ dependencies {
     implementation("com.github.ajalt.clikt:clikt:3.5.0")
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.rauschig:jarchivelib:1.2.0")
+    implementation("com.github.ajalt.mordant:mordant:2.0.0-beta7")
+    //implementation("org.asynchttpclient:async-http-client:2.12.3")
+
     testImplementation(kotlin("test"))
 }
 

@@ -1,6 +1,5 @@
 import com.vdurmont.semver4j.Semver
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -36,7 +35,7 @@ val CONFIG_HOME by lazy {
     path
 }
 
-val CONFIG_PATH by lazy { CONFIG_HOME.resolve("config.json") }
+val CONFIG_PATH: Path by lazy { CONFIG_HOME.resolve("config.json") }
 
 val jsonWrite = Json {
     encodeDefaults = true
@@ -46,7 +45,7 @@ val jsonWrite = Json {
 val CONFIG by lazy {
     if (CONFIG_PATH.exists()) {
         val text = CONFIG_PATH.readText()
-        Json.decodeFromString<Config>(text)
+        Json.decodeFromString(text)
     } else {
         println("Create new configuration file at $CONFIG_PATH")
         val config = Config()
@@ -74,10 +73,10 @@ data class RemoteRepository(
     val solvers: MutableList<RemoteSolver> = arrayListOf()
 ) {
     fun findLatestVersion(): Map<String, String> {
-        return solvers.map {
-            val highest = it.versions.map { it.version }.maxBy { Semver(it) }
+        return solvers.associate {
+            val highest = it.versions.map { v -> v.version }.maxBy { version -> Semver(version) }
             it.name to highest
-        }.toMap()
+        }
     }
 
     fun findSolverVersion(solver: String, version: String): Pair<RemoteSolver, RemoteSolverVersion>? {
@@ -109,14 +108,14 @@ data class RemoteSolverVersion(
             return if (os.startsWith("Windows"))
                 download.win
             else if (os.startsWith("Mac"))
-                download.macos
+                download.mac
             else
                 download.linux
         }
 }
 
 @Serializable
-data class DownloadUrls(val linux: String, val win: String, val macos: String)
+data class DownloadUrls(val linux: String, val win: String, val mac: String)
 
 
 @Serializable
@@ -126,7 +125,7 @@ data class LocalRepository(
 ) {
     fun findLatestVersion(): Map<String, String> {
         return installed.associate {
-            val highest = it.versions.map { it.version }.maxBy { Semver(it) }
+            val highest = it.versions.map { v -> v.version }.maxBy { version -> Semver(version) }
             it.name to highest
         }
     }
@@ -134,6 +133,33 @@ data class LocalRepository(
     fun isInstalled(name: String, version: String): Boolean {
         return installed.find { it.name == name }?.versions?.find { it.version == version } != null
     }
+
+    fun install(solver: RemoteSolver, solverVersion: RemoteSolverVersion) {
+        val lsolver = getSolver(solver.name)
+            ?: LocalSolver(
+                name = solver.name, license = solver.license, homepage = solver.homepage,
+                description = solver.description
+            ).also { installed.add(it) }
+
+        lsolver.versions.find { it.version == solverVersion.version }
+            ?: InstalledSolverVersion(
+                solverVersion.version, solverVersion.description, solverVersion.releaseDate,
+                solverVersion.executable
+            ).also { lsolver.versions.add(it) }
+    }
+
+    fun removeSolverVersion(solver: String, version: String) {
+        getSolver(solver)?.let { s ->
+            s.versions.removeIf { it.version == version }
+            if (s.versions.isEmpty()) {
+                installed.remove(s)
+            }
+        }
+    }
+
+    fun getSolver(solver: String) = installed.find { it.name == solver }
+    fun getSolverVersion(solver: String, version: String?) =
+        getSolver(solver)?.versions?.find { it.version == version }
 }
 
 @Serializable

@@ -1,96 +1,51 @@
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
-import com.github.ajalt.clikt.output.TermUi
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
-import com.vdurmont.semver4j.Semver
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import com.github.ajalt.mordant.rendering.OverflowWrap
+import com.github.ajalt.mordant.rendering.TextStyles.bold
+import com.github.ajalt.mordant.rendering.Whitespace
+import com.github.ajalt.mordant.terminal.Terminal
 import org.rauschig.jarchivelib.ArchiverFactory
 import java.io.File
-import java.io.FileOutputStream
 import java.net.URL
-import java.nio.channels.Channels
-import java.nio.channels.ReadableByteChannel
 import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.attribute.FileAttribute
-import java.util.regex.Matcher
-import java.util.regex.Pattern
-import kotlin.io.path.*
+import kotlin.io.path.exists
+import kotlin.system.exitProcess
 
-
-fun updateRemoteRepository() {
-    println("Update remote repository information: ${CONFIG.repositoryCacheFile}")
-    val url = URL(CONFIG.repositoryUrl)
-    url.openStream().bufferedReader().use { remote ->
-        val content = remote.readText()
-        CONFIG.repositoryCacheFile.bufferedWriter().use { local ->
-            local.write(content)
-        }
-    }
-}
-
-fun readRemoteRepository(): RemoteRepository {
-    if (!CONFIG.repositoryCacheFile.exists()) {
-        updateRemoteRepository()
-    }
-    val text = CONFIG.repositoryCacheFile.readText()
-    return Json.decodeFromString(text)
-}
-
-fun readLocalRepository(): LocalRepository {
-    if (!CONFIG.localInformationFile.exists()) {
-        val local = LocalRepository(formatVersion = VERSION)
-        CONFIG.localInformationFile.parent.createDirectories()
-        CONFIG.localInformationFile.writeText(jsonWrite.encodeToString(local))
-        return local
-    }
-    val text = CONFIG.localInformationFile.readText()
-    return Json.decodeFromString(text)
-}
-
-fun checkForUpdates(): Map<String, String> {
-    val remote = readRemoteRepository()
-    val local = readLocalRepository()
-    val latestRemoteVersion: Map<String, String> = remote.findLatestVersion()
-    val latestLocalVersion: Map<String, String> = local.findLatestVersion()
-
-    return latestLocalVersion.filter { (k, v) ->
-        latestRemoteVersion[k]?.let { r ->
-            val a = Semver(v)
-            val b = Semver(r)
-            a < b
-        } ?: false
-    }
-}
-
+internal val t = Terminal()
 
 class SmtMgr : CliktCommand() {
-    val version by option("--version").flag()
-    val verbose by option("-v", "--verbose").flag()
+    private val version by option("--version").flag()
+    private val verbose by option("-v", "--verbose").flag()
 
     override fun run() {
+        if (version) {
+            t.println("version $VERSION")
+            exitProcess(0)
+        }
+
         if (verbose) {
-            println("key-smtmgr -- Alexander Weigl")
-            println("version ${VERSION}")
-            println("config home $CONFIG_HOME")
-            println("config path $CONFIG_PATH")
-            println("config: $CONFIG")
+            t.println("$NAME -- Alexander Weigl <weigl@kit.edu>")
+            t.println("Version:           $VERSION")
+            t.println("CONFIG_HOME:       $CONFIG_HOME")
+            t.println("CONFIG_PATH:       $CONFIG_PATH")
+            t.println("KEY_SETTINGS_PATH: $KEY_SETTINGS_PATH")
+            t.println("CONFIG:            $CONFIG")
         }
     }
 }
 
 class UpdateRemoteRepository : CliktCommand(name = "update") {
     override fun run() {
-        echo("Updating the remote repository information.")
+        t.println("Updating the remote repository information.")
         updateRemoteRepository()
-        echo("Repository information is updated.")
+        t.println("Repository information is updated.")
         for ((solver, ver) in checkForUpdates()) {
-            echo("$solver is updatable to $ver")
-            echo("Use: `key-smtmgr install --enable $solver $ver")
+            t.println("$solver is updatable to $ver")
+            t.println("Use: `$NAME install --enable $solver $ver")
         }
     }
 }
@@ -99,28 +54,33 @@ class List : CliktCommand(name = "list") {
     override fun run() {
         val remote = readRemoteRepository()
         val local = readLocalRepository()
-
         for (solver in remote.solvers) {
-            println("------------------------------------")
-            println("Solver: ${solver.name}")
-            println("License: ${solver.license}")
-            println("Homepage: ${solver.homepage}")
-            println(solver.description)
-            println("Versions:")
+            t.println("------------------------------------")
+            t.println("${bold("Solver:")} ${solver.name}")
+            t.println(
+                "${bold("License:")} ${solver.license}", whitespace = Whitespace.PRE_WRAP,
+                overflowWrap = OverflowWrap.BREAK_WORD, width = 60
+            )
+            t.println("Homepage: ${solver.homepage}")
+            t.println(
+                solver.description,
+                whitespace = Whitespace.PRE_WRAP,
+                overflowWrap = OverflowWrap.BREAK_WORD, width = 60
+            )
+            t.println("Versions:")
             for (version in solver.versions) {
                 val isInstalled = local.isInstalled(solver.name, version.version)
-                println("\t* ${version.version} ${version.releaseDate} ${if (isInstalled) "(INSTALLED)" else ""}")
-                println("\t  ${version.description}")
+                t.println("\t* ${version.version} ${version.releaseDate} ${if (isInstalled) "(INSTALLED)" else ""}")
+                t.println("\t  ${version.description}")
             }
-            print("------------------------------------")
         }
     }
 }
 
 class InstallSolver : CliktCommand(name = "install") {
-    val enable by option("--enable").flag()
-    val solver by argument("SOLVER")
-    val version by argument("VERSION")
+    private val enable by option("--enable").flag()
+    private val solver by argument("SOLVER")
+    private val version by argument("VERSION")
 
     override fun run() {
         val remote = readRemoteRepository()
@@ -128,49 +88,70 @@ class InstallSolver : CliktCommand(name = "install") {
         if (p != null) {
             val (solver, version) = p
             installSolver(solver, version)
+            if (enable) {
+                enableSolverVersion(solver.name, version.version)
+            }
         } else {
-            echo("Solver $solver:$version is unknown. ")
+            t.danger("Solver $solver:$version is unknown.")
             return
         }
     }
 
-    fun installSolver(solver: RemoteSolver, solverVersion: RemoteSolverVersion) {
+    private fun installSolver(solver: RemoteSolver, solverVersion: RemoteSolverVersion) {
         val tempDir = Files.createTempDirectory("download_$NAME")
         val url = URL(solverVersion.currentDownloadUrl)
         val name = File(url.path).name
         val localArchive = tempDir.resolve(name)
         val installationPath = getInstallationPath(solver, solverVersion)
 
-        echo("Installing to $installationPath")
-
-        val readableByteChannel: ReadableByteChannel = Channels.newChannel(url.openStream())
-        readableByteChannel.use {
-            FileOutputStream(localArchive.toFile()).use { local ->
-                local.channel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE)
-            }
+        if (installationPath.exists()) {
+            t.warning("$installationPath already exists. Abort installation.")
+            t.warning("Use `$NAME remove $solver $version` to clear previous installation")
+            return
         }
 
-        ArchiverFactory.createArchiver(localArchive.toFile())
-            ?.extract(localArchive.toFile(), installationPath.toFile())
+        t.info("Installing to $installationPath")
+
+        downloadFile(url, localArchive)
+
+        try {
+            t.info("Unpacking archive to $installationPath")
+            ArchiverFactory.createArchiver(localArchive.toFile())
+                ?.extract(localArchive.toFile(), installationPath.toFile())
+        } catch (_: java.lang.IllegalArgumentException) {
+            val target = installationPath.resolve(name)
+            t.info("Downloaded is an executable. Just copy it to $target")
+            Files.copy(localArchive, target)
+        }
+
+        t.info("Register solver locally.")
+        val local = readLocalRepository()
+        local.install(solver, solverVersion)
+        saveLocalRepository(local)
+
+        t.info("Solver can be called: $local")
     }
 }
 
-fun getInstallationPath(solver: RemoteSolver, version: RemoteSolverVersion): Path =
-    getInstallationPath(solver.name, version.version)
-
-fun getInstallationPath(solver: String, version: String) =
-    CONFIG.installationPathFile.resolve(solver).resolve(version)
-
 
 class RemoveSolver : CliktCommand(name = "remove") {
+    private val solver by argument("SOLVER")
+    private val version by argument("VERSION")
     override fun run() {
-        TODO("Not yet implemented")
+        val local = readLocalRepository()
+        val path = getInstallationPath(solver, version)
+        path.deleteRecursively()
+        local.removeSolverVersion(solver, version)
+        saveLocalRepository(local)
+        enableSolverVersion(solver, null)
     }
 }
 
 class EnableSolver : CliktCommand(name = "enable") {
+    private val solver by argument("SOLVER")
+    private val version by argument("VERSION").optional()
     override fun run() {
-        TODO("Not yet implemented")
+        enableSolverVersion(solver, version)
     }
 }
 
@@ -182,20 +163,4 @@ fun main(args: Array<String>) {
             RemoveSolver(), EnableSolver(), List()
         )
         .main(args)
-}
-
-
-fun expandVariables(text: String): String {
-    val pattern = "\\$(\\{(\\w+)\\}|[a-zA-Z\\d]+)"
-    val expr: Pattern = Pattern.compile(pattern)
-    val matcher: Matcher = expr.matcher(text)
-    val envMap = System.getenv()
-    var text: String = text
-    while (matcher.find()) {
-        var envValue: String = envMap.get(matcher.group(1).toUpperCase()) ?: ""
-        envValue = envValue.replace("\\", "\\\\") ?: ""
-        val subexpr: Pattern = Pattern.compile(Pattern.quote(matcher.group(0)))
-        text = subexpr.matcher(text).replaceAll(envValue)
-    }
-    return text
 }
