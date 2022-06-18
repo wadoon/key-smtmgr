@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "org.keyproject.smtmgr"
-version = "1.0-SNAPSHOT"
+version = "1.0-alpha-1"
 
 repositories {
     mavenCentral()
