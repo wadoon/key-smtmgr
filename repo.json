@@ -1,6 +1,8 @@
 {
   "updated": "2022-06-16T16:17:45Z",
-  "version": 1,
+  "formatVersion": 1,
+  "latestVersion": "1.0-alpha-1",
+  "latestDownload": "https://github.com/wadoon/key-smtmgr/releases/download/1.0-alpha-1/key-smtmgr-1.0-alpha-1-all.jar",
   "solvers": [
     {
       "name": "z3",

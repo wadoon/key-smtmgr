@@ -67,7 +67,7 @@ fun readRemoteRepository(): RemoteRepository {
 
 fun readLocalRepository(): LocalRepository {
     if (!CONFIG.localInformationFile.exists()) {
-        val local = LocalRepository(formatVersion = VERSION)
+        val local = LocalRepository(formatVersion = FORMAT_VERSION)
         CONFIG.localInformationFile.parent.createDirectories()
         CONFIG.localInformationFile.writeText(jsonWrite.encodeToString(local))
         return local

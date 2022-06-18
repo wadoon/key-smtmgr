@@ -13,7 +13,9 @@ import kotlin.io.path.writeText
 /**
  * Current version of the program, needed for repository layout.
  */
-const val VERSION = 1
+const val FORMAT_VERSION = 1
+
+const val VERSION = "1.0-alpha-2"
 
 /**
  * The name of the program, used for configuration path
@@ -69,7 +71,9 @@ data class Config(
 @Serializable
 data class RemoteRepository(
     val updated: String,
-    val version: Int,
+    val formatVersion: Int,
+    val latestVersion: String,
+    val latestDownload: String,
     val solvers: MutableList<RemoteSolver> = arrayListOf()
 ) {
     fun findLatestVersion(): Map<String, String> {

@@ -8,6 +8,7 @@ import com.github.ajalt.mordant.rendering.OverflowWrap
 import com.github.ajalt.mordant.rendering.TextStyles.bold
 import com.github.ajalt.mordant.rendering.Whitespace
 import com.github.ajalt.mordant.terminal.Terminal
+import com.vdurmont.semver4j.Semver
 import org.rauschig.jarchivelib.ArchiverFactory
 import java.io.File
 import java.net.URL
@@ -23,13 +24,13 @@ class SmtMgr : CliktCommand() {
 
     override fun run() {
         if (version) {
-            t.println("version $VERSION")
+            t.println("version $FORMAT_VERSION")
             exitProcess(0)
         }
 
         if (verbose) {
             t.println("$NAME -- Alexander Weigl <weigl@kit.edu>")
-            t.println("Version:           $VERSION")
+            t.println("Version:           $FORMAT_VERSION")
             t.println("CONFIG_HOME:       $CONFIG_HOME")
             t.println("CONFIG_PATH:       $CONFIG_PATH")
             t.println("KEY_SETTINGS_PATH: $KEY_SETTINGS_PATH")
@@ -47,6 +48,20 @@ class UpdateRemoteRepository : CliktCommand(name = "update") {
             t.println("$solver is updatable to $ver")
             t.println("Use: `$NAME install --enable $solver $ver")
         }
+
+        val remote = readRemoteRepository()
+        val curVersion = Semver(VERSION)
+        val latestVersion = Semver(remote.latestVersion)
+
+        if (latestVersion > curVersion) {
+            t.warning("A new version ${remote.latestVersion} (current: $curVersion) is available for download.")
+            t.warning("URL: ${remote.latestDownload}")
+        }
+
+        if (remote.formatVersion > FORMAT_VERSION) {
+            t.danger("FORMAT CHANGE CONSIDER UPDATE")
+        }
+
     }
 }
 
