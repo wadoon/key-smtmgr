@@ -56,14 +56,25 @@ val CONFIG by lazy {
     }
 }
 
+val DATA_HOME: Path by lazy {
+    val s = System.getenv("XDG_DATA_HOME")
+    if (s == null) {
+        val home = System.getenv("HOME")
+        // if not set, use default value as defined in standard:
+        // https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html#variables
+        Paths.get(home, ".local", "share")
+    } else {
+        Paths.get(s)
+    }
+}
 
 @Serializable
 data class Config(
     val repositoryUrl: String = "https://raw.githubusercontent.com/wadoon/key-smtmgr/main/repo.json",
-    val installationPath: String = "\$XDG_DATA_PATH/key-smtmgr",
+    val installationDirname: String = "key-smtmgr",
     val repositoryCache: String = "repository.cache.json"
 ) {
-    val installationPathFile: Path by lazy { Paths.get(installationPath) }
+    val installationPathFile: Path by lazy { DATA_HOME.resolve(installationDirname) }
     val localInformationFile: Path by lazy { installationPathFile.resolve("info.json") }
     val repositoryCacheFile: Path by lazy { CONFIG_HOME.resolve(repositoryCache) }
 }
