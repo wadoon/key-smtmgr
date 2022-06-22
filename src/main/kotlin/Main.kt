@@ -50,8 +50,8 @@ class UpdateRemoteRepository : CliktCommand(name = "update") {
         }
 
         val remote = readRemoteRepository()
-        val curVersion = Semver(VERSION)
-        val latestVersion = Semver(remote.latestVersion)
+        val curVersion = Semver(VERSION, Semver.SemverType.LOOSE)
+        val latestVersion = Semver(remote.latestVersion, Semver.SemverType.LOOSE)
 
         if (latestVersion > curVersion) {
             t.warning("A new version ${remote.latestVersion} (current: $curVersion) is available for download.")
