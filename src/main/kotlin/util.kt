@@ -4,18 +4,45 @@ import com.vdurmont.semver4j.Semver
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.File
 import java.io.FileOutputStream
+import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.channels.Channels
 import java.nio.channels.ReadableByteChannel
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import kotlin.io.path.*
 
-fun downloadFile(url: URL, localArchive: Path) {
-    t.info("Download $url to $localArchive")
+/**
+ * This method downloads a file from the give URL and saves it into the given target directory. The filename is
+ * determined automatically from the URL.
+ *
+ * Note that the final filename may not be part of the given URL if the connection is redirected.
+ *
+ * @param url the URL where the file to download is located
+ * @param targetDir the local directory where the file will be stored
+ * @return the local path of the downloaded file
+ */
+fun downloadFile(url: URL, targetDir: Path): Path {
+
+    val name = File(url.path).name
+    var resultPath: Path = targetDir.resolve(name)
+
+    // for php redirects we have to read the filename that is redirected to
+    if (url.path.endsWith(".php")) {
+        // separate connection just to determine the filename
+        val nameConnection = url.openConnection() as HttpURLConnection
+        nameConnection.instanceFollowRedirects = false;
+        val loc: String = nameConnection.getHeaderField("Location")
+        val location: Path = Paths.get(loc).fileName
+        resultPath = targetDir.resolve(location.fileName)
+    }
+
+    t.info("Download $url to $resultPath")
     val progress = t.progressAnimation {
-        text("${localArchive.fileName}")
+        text("${resultPath.fileName}")
         percentage()
         progressBar()
         completed()
@@ -23,7 +50,7 @@ fun downloadFile(url: URL, localArchive: Path) {
         timeRemaining()
     }
 
-    val connection = url.openConnection()
+    val connection = url.openConnection() as HttpURLConnection
     val input = connection.getInputStream()
 
     val total = connection.getHeaderField("content-length")?.toLong()
@@ -31,12 +58,13 @@ fun downloadFile(url: URL, localArchive: Path) {
 
     val readableByteChannel: ReadableByteChannel = Channels.newChannel(input)
     ReadableConsumerByteChannel(readableByteChannel, progress::update).use {
-        FileOutputStream(localArchive.toFile()).use { local ->
+        FileOutputStream(resultPath.toFile()).use { local ->
             local.channel.transferFrom(it, 0, Long.MAX_VALUE)
             total?.let { progress.update(it, it) }
             progress.update()
         }
     }
+    return resultPath
 }
 
 fun getInstallationPath(solver: RemoteSolver, version: RemoteSolverVersion): Path =
