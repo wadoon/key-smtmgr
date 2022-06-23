@@ -10,9 +10,9 @@ import com.github.ajalt.mordant.rendering.Whitespace
 import com.github.ajalt.mordant.terminal.Terminal
 import com.vdurmont.semver4j.Semver
 import org.rauschig.jarchivelib.ArchiverFactory
-import java.io.File
 import java.net.URL
 import java.nio.file.Files
+import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 import kotlin.system.exitProcess
 
@@ -50,8 +50,8 @@ class UpdateRemoteRepository : CliktCommand(name = "update") {
         }
 
         val remote = readRemoteRepository()
-        val curVersion = Semver(VERSION)
-        val latestVersion = Semver(remote.latestVersion)
+        val curVersion = Semver(VERSION, Semver.SemverType.LOOSE)
+        val latestVersion = Semver(remote.latestVersion, Semver.SemverType.LOOSE)
 
         if (latestVersion > curVersion) {
             t.warning("A new version ${remote.latestVersion} (current: $curVersion) is available for download.")
@@ -115,8 +115,6 @@ class InstallSolver : CliktCommand(name = "install") {
     private fun installSolver(solver: RemoteSolver, solverVersion: RemoteSolverVersion) {
         val tempDir = Files.createTempDirectory("download_$NAME")
         val url = URL(solverVersion.currentDownloadUrl)
-        val name = File(url.path).name
-        val localArchive = tempDir.resolve(name)
         val installationPath = getInstallationPath(solver, solverVersion)
 
         if (installationPath.exists()) {
@@ -127,16 +125,24 @@ class InstallSolver : CliktCommand(name = "install") {
 
         t.info("Installing to $installationPath")
 
-        downloadFile(url, localArchive)
+        // may change the localArchive filename if the connection is redirected
+        val localPath = downloadFile(url, tempDir)
+        val name = localPath.fileName.toString()
 
         try {
             t.info("Unpacking archive to $installationPath")
-            ArchiverFactory.createArchiver(localArchive.toFile())
-                ?.extract(localArchive.toFile(), installationPath.toFile())
-        } catch (_: java.lang.IllegalArgumentException) {
-            val target = installationPath.resolve(name)
-            t.info("Downloaded is an executable. Just copy it to $target")
-            Files.copy(localArchive, target)
+            ArchiverFactory.createArchiver(localPath.toFile())
+                ?.extract(localPath.toFile(), installationPath.toFile())
+        } catch (ex : Exception) {
+            when(ex) {
+                is java.lang.IllegalArgumentException, is java.io.IOException -> {
+                    val target = installationPath.resolve(name)
+                    t.info("Downloaded is an executable. Just copy it to $target")
+                    installationPath.createDirectories()
+                    Files.copy(localPath, target)
+                }
+                else -> throw ex
+            }
         }
 
         t.info("Register solver locally.")
