@@ -1,9 +1,27 @@
 {
   "updated": "2022-06-16T16:17:45Z",
   "formatVersion": 1,
-  "latestVersion": "1.0-alpha-1",
-  "latestDownload": "https://github.com/wadoon/key-smtmgr/releases/download/1.0-alpha-1/key-smtmgr-1.0-alpha-1-all.jar",
+  "latestVersion": "1.0-alpha-2",
+  "latestDownload": "https://github.com/wadoon/key-smtmgr/releases/download/1.0-alpha-2/key-smtmgr-1.0-alpha-2-all.jar",
   "solvers": [
+    {
+      "name": "INVISMT",
+      "license": "GPL v3",
+      "homepage": "https://gitlab.com/invismt/invismt/",
+      "description": "The goal of this project is to provide a visual user interface to simplify the work with SMT-problems.",
+      "versions": [
+        {
+          "version": "1.0-alpha-1",
+          "releaseDate": "2022-06-24",
+          "executable": " invismt.sh",
+          "download": {
+            "linux": "https://formal.iti.kit.edu/weigl/invismt/invismt-1.0-alpha-1.zip",
+            "win": "https://formal.iti.kit.edu/weigl/invismt/invismt-1.0-alpha-1.zip",
+            "mac": "https://formal.iti.kit.edu/weigl/invismt/invismt-1.0-alpha-1.zip"
+          }
+        }
+      ]
+    },
     {
       "name": "z3",
       "license": "MIT License",

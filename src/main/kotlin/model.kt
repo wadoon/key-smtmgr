@@ -70,7 +70,9 @@ val DATA_HOME: Path by lazy {
 
 @Serializable
 data class Config(
-    val repositoryUrl: String = "https://raw.githubusercontent.com/wadoon/key-smtmgr/main/repo.json",
+    val stableRepoUrl: String = "https://raw.githubusercontent.com/wadoon/key-smtmgr/stable/repo.json",
+    val nightlyRepoUrl: String = "https://raw.githubusercontent.com/wadoon/key-smtmgr/main/repo.json",
+    var nightlyChannel: Boolean = false,
     val installationDirname: String = "key-smtmgr",
     val repositoryCache: String = "repository.cache.json"
 ) {

@@ -6,13 +6,14 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream
-import java.net.HttpURLConnection
 import java.net.URL
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse.BodySubscribers
 import java.nio.channels.Channels
 import java.nio.channels.ReadableByteChannel
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.io.path.*
 
 /**
@@ -26,21 +27,11 @@ import kotlin.io.path.*
  * @return the local path of the downloaded file
  */
 fun downloadFile(url: URL, targetDir: Path): Path {
-
     val name = File(url.path).name
-    var resultPath: Path = targetDir.resolve(name)
-
-    // for php redirects we have to read the filename that is redirected to
-    if (url.path.endsWith(".php")) {
-        // separate connection just to determine the filename
-        val nameConnection = url.openConnection() as HttpURLConnection
-        nameConnection.instanceFollowRedirects = false;
-        val loc: String = nameConnection.getHeaderField("Location")
-        val location: Path = Paths.get(loc).fileName
-        resultPath = targetDir.resolve(location.fileName)
-    }
+    val resultPath: Path = targetDir.resolve(name)
 
     t.info("Download $url to $resultPath")
+
     val progress = t.progressAnimation {
         text("${resultPath.fileName}")
         percentage()
@@ -50,20 +41,38 @@ fun downloadFile(url: URL, targetDir: Path): Path {
         timeRemaining()
     }
 
-    val connection = url.openConnection() as HttpURLConnection
-    val input = connection.getInputStream()
-
-    val total = connection.getHeaderField("content-length")?.toLong()
+    val client = HttpClient.newBuilder()
+        .followRedirects(HttpClient.Redirect.ALWAYS)
+        .build()
+    val request = HttpRequest.newBuilder(url.toURI()).build()
+    val response = client.send(request) { BodySubscribers.ofInputStream() }
+    val total = response.headers().firstValueAsLong("content-length")?.let { l ->
+        if (l.isEmpty) null else l.asLong
+    }
     progress.updateTotal(total)
-
-    val readableByteChannel: ReadableByteChannel = Channels.newChannel(input)
-    ReadableConsumerByteChannel(readableByteChannel, progress::update).use {
-        FileOutputStream(resultPath.toFile()).use { local ->
-            local.channel.transferFrom(it, 0, Long.MAX_VALUE)
-            total?.let { progress.update(it, it) }
-            progress.update()
+    response.body().let { input ->
+        val readableByteChannel: ReadableByteChannel = Channels.newChannel(input)
+        ReadableConsumerByteChannel(readableByteChannel, progress::update).use {
+            FileOutputStream(resultPath.toFile()).use { local ->
+                local.channel.transferFrom(it, 0, Long.MAX_VALUE)
+                total?.let { progress.update(it, it) }
+                progress.update()
+            }
         }
     }
+
+
+/*
+// for php redirects we have to read the filename that is redirected to
+if (url.path.endsWith(".php")) {
+    // separate connection just to determine the filename
+    val nameConnection = url.openConnection() as HttpURLConnection
+    nameConnection.instanceFollowRedirects = false;
+    val loc: String = nameConnection.getHeaderField("Location")
+    val location: Path = Paths.get(loc).fileName
+    resultPath = targetDir.resolve(location.fileName)
+}
+*/
     return resultPath
 }
 
@@ -76,7 +85,8 @@ fun getInstallationPath(solver: String, version: String): Path =
 
 fun updateRemoteRepository() {
     t.info("Update remote repository information: ${CONFIG.repositoryCacheFile}")
-    val url = URL(CONFIG.repositoryUrl)
+    val url = if (CONFIG.nightlyChannel) URL(CONFIG.nightlyRepoUrl) else URL(CONFIG.stableRepoUrl)
+
     url.openStream().bufferedReader().use { remote ->
         val content = remote.readText()
         CONFIG.repositoryCacheFile.bufferedWriter().use { local ->
@@ -106,6 +116,10 @@ fun readLocalRepository(): LocalRepository {
 
 fun saveLocalRepository(local: LocalRepository) {
     CONFIG.localInformationFile.writeText(jsonWrite.encodeToString(local))
+}
+
+fun saveConfig() {
+    CONFIG_PATH.writeText(jsonWrite.encodeToString(CONFIG))
 }
 
 fun checkForUpdates(): Map<String, String> {

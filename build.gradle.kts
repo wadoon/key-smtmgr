@@ -22,6 +22,7 @@ dependencies {
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.rauschig:jarchivelib:1.2.0")
     implementation("com.github.ajalt.mordant:mordant:2.0.0-beta7")
+    //implementation("org.apache.httpcomponents:fluent-hc:4.5.13")
     //implementation("org.asynchttpclient:async-http-client:2.12.3")
 
     testImplementation(kotlin("test"))

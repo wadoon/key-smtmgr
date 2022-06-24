@@ -40,7 +40,19 @@ class SmtMgr : CliktCommand() {
 }
 
 class UpdateRemoteRepository : CliktCommand(name = "update") {
+    val nightly by option("--nightly").flag()
+    val stable by option("--stable").flag()
+
     override fun run() {
+        if (stable) {
+            t.println("Change to stable!")
+            CONFIG.nightlyChannel = false
+            saveConfig()
+        } else if (nightly) {
+            CONFIG.nightlyChannel = true
+            saveConfig()
+        }
+
         t.println("Updating the remote repository information.")
         updateRemoteRepository()
         t.println("Repository information is updated.")
@@ -132,8 +144,8 @@ class InstallSolver : CliktCommand(name = "install") {
             t.info("Unpacking archive to $installationPath")
             ArchiverFactory.createArchiver(localPath.toFile())
                 ?.extract(localPath.toFile(), installationPath.toFile())
-        } catch (ex : Exception) {
-            when(ex) {
+        } catch (ex: Exception) {
+            when (ex) {
                 is java.lang.IllegalArgumentException, is java.io.IOException -> {
                     val target = installationPath.resolve(name)
                     t.info("Downloaded is an executable. Just copy it to $target")
