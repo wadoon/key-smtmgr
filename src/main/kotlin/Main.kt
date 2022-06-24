@@ -33,7 +33,7 @@ class SmtMgr : CliktCommand() {
             t.println("Version:           $FORMAT_VERSION")
             t.println("CONFIG_HOME:       $CONFIG_HOME")
             t.println("CONFIG_PATH:       $CONFIG_PATH")
-            t.println("KEY_SETTINGS_PATH: $KEY_SETTINGS_PATH")
+            t.println("KEY_SETTINGS_PATH: ${KeySettings.KEY_SETTINGS_PATH}")
             t.println("CONFIG:            $CONFIG")
         }
     }
@@ -59,9 +59,8 @@ class UpdateRemoteRepository : CliktCommand(name = "update") {
         }
 
         if (remote.formatVersion > FORMAT_VERSION) {
-            t.danger("FORMAT CHANGE CONSIDER UPDATE")
+            t.danger("FORMAT CHANGE! CONSIDER UPDATE")
         }
-
     }
 }
 

@@ -5,15 +5,14 @@ import kotlin.io.path.bufferedReader
 import kotlin.io.path.bufferedWriter
 
 /**
- *
+ * KeY-related functions for manipulating its configuration.
  * @author Alexander Weigl
  * @version 1 (17.06.22)
  */
-
-val KEY_SETTINGS_PATH: Path =
-    Paths.get(System.getProperty("user.home"), ".key", "proofIndependentSettings.props")
-
 object KeySettings {
+    val KEY_SETTINGS_PATH: Path =
+        Paths.get(System.getProperty("user.home"), ".key", "proofIndependentSettings.props")
+
     fun load(): Properties {
         val properties = Properties()
         KEY_SETTINGS_PATH.bufferedReader().use { properties.load(it) }
