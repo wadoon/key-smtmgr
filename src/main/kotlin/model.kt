@@ -119,7 +119,7 @@ data class RemoteSolverVersion(
     val download: DownloadUrls,
     val executable: String
 ) {
-    val currentDownloadUrl: String
+    val currentDownloadUrl: String?
         get() {
             val os = System.getProperty("os.name")
             return if (os.startsWith("Windows"))
@@ -132,7 +132,7 @@ data class RemoteSolverVersion(
 }
 
 @Serializable
-data class DownloadUrls(val linux: String, val win: String, val mac: String)
+data class DownloadUrls(val linux: String?, val win: String?, val mac: String?)
 
 
 @Serializable
